@@ -48,7 +48,7 @@ public class Gui implements Observer,ActionListener {
             textView=TextView.createAndShowGui(prefix);
             tee.addOutputStream(textView.taOutputStream);
         }
-        if(textView!=null) textView.frame.setVisible(false);
+        if(textView!=null) textView.frame.setVisible(true);
     }
     public void start() throws InvocationTargetException,InterruptedException {
         javax.swing.SwingUtilities.invokeAndWait(new Runnable() {
@@ -60,7 +60,7 @@ public class Gui implements Observer,ActionListener {
     @Override public void actionPerformed(ActionEvent e) {
         logger.info("action performed: "+e);
         TabletMenuItem x=TabletMenuItem.valueOf(e.getActionCommand());
-        if(x!=null) x.doItem(tablet);
+        if(x!=null) x.doItem(this);
         else if(e.getActionCommand().equals("Open ...")) {
             logger.info("not implemented: "+e.getActionCommand());
         } else if(e.getActionCommand().equals("Save ...")) {
@@ -147,11 +147,13 @@ public class Gui implements Observer,ActionListener {
             menuItem.addActionListener(this);
             menu.add(menuItem);
         }
-        menuItem=new JMenuItem("Log",KeyEvent.VK_C);
-        menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L,ActionEvent.ALT_MASK));
-        menuItem.getAccessibleContext().setAccessibleDescription("Log");
-        menuItem.addActionListener(this);
-        menu.add(menuItem);
+        if(false) {
+            menuItem=new JMenuItem("Log",KeyEvent.VK_C);
+            menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L,ActionEvent.ALT_MASK));
+            menuItem.getAccessibleContext().setAccessibleDescription("Log");
+            menuItem.addActionListener(this);
+            menu.add(menuItem);
+        }
         menuBar.add(menu);
         menu=new JMenu("Help");
         menu.setMnemonic(KeyEvent.VK_H);
@@ -333,8 +335,8 @@ public class Gui implements Observer,ActionListener {
     }
     final int tabletId;
     final Model model;
-    Tablet tablet;
-    final TextView textView;
+    public Tablet tablet;
+    public final TextView textView;
     /*final*/ GuiAdapterABC adapter;
     final Map<Integer,Color> idToColor;
     final Map<Integer,JToggleButton> idToButton=new LinkedHashMap<>();

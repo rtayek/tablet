@@ -30,7 +30,6 @@ public class Group implements Cloneable {
         public Tablet(int tabletId) throws IOException {
             model=newModel();
             client=new TcpClient(Group.this,tabletId,model);
-            model.setState(1,true);
             System.out.println("model id is ="+model.serialNumber);
             this.tabletId=tabletId;
         }

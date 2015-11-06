@@ -22,7 +22,7 @@ import javax.swing.SwingUtilities;
         frame.getContentPane().add(textView);
         frame.pack();
         frame.setLocationRelativeTo(null);
-        frame.setVisible(false);
+        frame.setVisible(true);
         textView.frame=frame;
         return textView;
     }

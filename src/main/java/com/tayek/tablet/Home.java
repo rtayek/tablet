@@ -87,7 +87,7 @@ public class Home {
         if(properties!=null) properties.list(System.out);
         else System.out.println("failed to load propertiies!");
         if(host==null)
-            host="192.168.1.101";
+            host="192.168.1.100";
         if(service==null)
             service=30_000;
     }
@@ -95,6 +95,8 @@ public class Home {
         God.log.init();
         LoggingHandler.setLevel(Level.ALL);
         God.home.init();
+        Home home=new Home();
+        home.run();
     }
     public static String host;
     public static Integer service=30_000;
