@@ -60,8 +60,10 @@ public class Gui implements Observer,ActionListener {
     @Override public void actionPerformed(ActionEvent e) {
         logger.info("action performed: "+e);
         TabletMenuItem x=TabletMenuItem.valueOf(e.getActionCommand());
-        if(x!=null) x.doItem(this);
-        else if(e.getActionCommand().equals("Open ...")) {
+        if(x!=null) {
+            if(x.equals(TabletMenuItem.Log)) textView.setVisible(!textView.isVisible());
+            else x.doItem(tablet);
+        } else if(e.getActionCommand().equals("Open ...")) {
             logger.info("not implemented: "+e.getActionCommand());
         } else if(e.getActionCommand().equals("Save ...")) {
             logger.info("not implemented: "+e.getActionCommand());
