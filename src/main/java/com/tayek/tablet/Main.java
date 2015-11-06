@@ -5,7 +5,6 @@ import com.tayek.utilities.Dispatcher;
 import com.tayek.tablet.gui.swing.Gui;
 import com.tayek.aa.Factory;
 import com.tayek.tablet.Group.*;
-
 import static com.tayek.utilities.Utility.*;
 public class Main {
     public static void main(String[] arguments)

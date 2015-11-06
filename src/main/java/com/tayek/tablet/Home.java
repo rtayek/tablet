@@ -16,7 +16,6 @@ public class Home {
     // since it's just a group with an ip and a port
     // also, if we could clone the models from it
     // then it's like a factory that can move around
-
     public static class GetSocket implements Runnable {
         GetSocket(InetAddress inetAddress,int service) {
             this.inetAddress=inetAddress;
@@ -50,6 +49,7 @@ public class Home {
     void run() throws IOException { // only run on the server
         ServerSocket serverSocket=new ServerSocket(port(0));
         Group group=Group.create(1,1);
+        // belongs in some config or properties file.
         Properties properties=group.properties();
         Writer writer=new FileWriter(new File("home.properties"));
         properties.store(writer,null);
@@ -66,24 +66,57 @@ public class Home {
     public static Group group() {
         return group;
     }
+    public static Properties load(final InputStream inputStream) { // from jat/
+        final Properties p=new Properties(/*defaultProperties*/); // add defaults
+        try {
+            p.load(inputStream);
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        }
+        return p;
+    }
+    public static Properties load(final File propertiesFile) { // from jat/
+        Properties p=null;
+        try {
+            final InputStream in=new FileInputStream(propertiesFile);
+            p=load(in);
+        } catch(FileNotFoundException e) {
+            System.out.println(e);
+        }
+        return p;
+    }
     static void init() {
+        Properties properties=load(new File("home.properties"));
+        properties.list(System.out);
         if(inetAddress==null) {
             try {
-                inetAddress=InetAddress.getLocalHost();
-                port=20000;
+                inetAddress=InetAddress.getLocalHost(); // must be done for
+                                                        // clients
+                // that's sill, localhost is probably the wrong thing
             } catch(UnknownHostException e) {
                 System.out.println("can not get internet address of localhost!");
             }
         }
+        if(port==null) port=20000; // must be done for home, so he knows what
+                                   // port to use
+        // clients need this also
     }
     public static void main(String[] arguments) throws IOException,InterruptedException {
         God.log.init();
         LoggingHandler.setLevel(Level.ALL);
         God.home.init();
-        if(arguments.length>0)
-        {
-           InetAddress inetAddress=InetAddress.getByName(arguments[0]); 
-           Home.inetAddress=inetAddress;
+        if(false) {
+            // looks like this is all bogus
+            // he just gets a server socket on some port!
+            // so all these addresses are for the tablets! (clients)
+            InetAddress inetAddress2=InetAddress.getByAddress(new byte[] {(byte)192,(byte)168,1,101});
+            Home.inetAddress=inetAddress2;
+            God.home.init();
+            if(arguments.length>0) // allow override from command line
+            {
+                inetAddress=InetAddress.getByName(arguments[0]);
+                Home.inetAddress=inetAddress;
+            }
         }
         Home home=new Home();
         home.run();
@@ -97,8 +130,8 @@ public class Home {
     // if we are not 1, then host is 1's ip address and port is home+0
     // or since we know everyone's ip address, we can just have a conection to
     // each.
-    private static int port=20000;
-    private static InetAddress inetAddress;
+    public static Integer port;
+    public static InetAddress inetAddress;
     private static Group group=Group.create(1,1);
     public static final Logger logger=Logger.getLogger(Server.class.getName());
 }

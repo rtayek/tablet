@@ -305,13 +305,22 @@ public class Gui implements Observer,ActionListener {
         System.out.println(""+" "+"tee'd");
         return textView;
     }
-    public static void main(String[] args) throws IOException,InterruptedException {
+    // idea: make the gui classes inner to the mediator
+    public static void main(String[] arguments) throws IOException,InterruptedException {
         God.log.init();
         LoggingHandler.setLevel(Level.ALL);
+        // set ip here
         God.home.init();
+        Home home=new Home();
+        
+        System.out.println(home.inetAddress+"/"+home.port);
+        if(false) if(arguments.length>0) {
+            InetAddress inetAddress=InetAddress.getByName(arguments[0]);
+            Home.inetAddress=inetAddress;
+        }
         // android tablets are 1 and 2 for now, so start uo a few other ones.
-        if(args.length==0) args=new String[] {"4","5"};
-        for(String arg:args) {
+        if(arguments.length==0) arguments=new String[] {"4","5"};
+        for(String arg:arguments) {
             Integer tabletId=Utility.toInteger(arg);
             if(tabletId!=null) {
                 Group group=Home.group().newGroup();

@@ -210,6 +210,7 @@ public class Server implements Runnable {
     public static void main(String[] args) throws IOException,InterruptedException {
         God.log.init();
         LoggingHandler.setLevel(Level.OFF);
+        God.home.init();
         ServerSocket serverSocket=new ServerSocket(Home.port(0));
         Group group=Group.create(1,1);
         Server server=new Server(group,serverSocket);

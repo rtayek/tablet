@@ -20,6 +20,7 @@ public enum Parameters { // properties
     @Override public String toString() {
         return name()+"="+currentValue+"("+defaultValue+")";
     }
+
     public static void loadPropertiesFile(Properties properties,String filename) {
         URL url=Parameters.class.getResource(filename);
         if(url!=null) try {
@@ -36,7 +37,7 @@ public enum Parameters { // properties
         else logger.warning("url is null for filename: "+filename);
     }
     public void loadPropertiesFile(Properties properties) {
-        Parameters.loadPropertiesFile(properties,Parameters.propertiesFilename);
+        loadPropertiesFile(properties,Parameters.propertiesFilename);
     }
     public static void writePropertiesFile(Properties properties,String filename) {
         try {
