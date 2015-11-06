@@ -1,0 +1,30 @@
+apply plugin: 'java'
+apply plugin: 'distribution'
+apply plugin: 'application'
+repositories {
+    jcenter()
+}
+// http://tools.android.com/tech-docs/new-build-system/user-guide
+// do i need a:
+// compileOptions {" around these guys?
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+// }
+
+dependencies {
+    testCompile 'junit:junit:4.12'
+}
+jar {
+    manifest {
+        attributes 'Main-Class': MyStuff.main
+    }
+}
+mainClassName = MyStuff.main // for application plugin (or is it the dist thing?)
+
+run {
+	systemProperties System.getProperties()
+}
+class MyStuff {
+	public static final String main='com.tayek.tablet.Main'
+}
+
