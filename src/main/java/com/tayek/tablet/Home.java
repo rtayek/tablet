@@ -17,8 +17,8 @@ public class Home {
     // also, if we could clone the models from it
     // then it's like a factory that can move around
     public static class GetSocket implements Runnable {
-        GetSocket(InetAddress inetAddress,int service) {
-            this.inetAddress=inetAddress;
+        public GetSocket(String host,int service) {
+            this.host=host;
             this.service=service;
         }
         // expand this class. make it more usable
@@ -32,18 +32,17 @@ public class Home {
             return socket;
         }
         public Socket get() { // for clients to connect to
-            logger.info("host: "+inetAddress);
             Socket socket=null;
             try {
-                socket=new Socket(inetAddress,service);
+                socket=new Socket(host,service);
             } catch(IOException e) {
-                logger.info("socket for: "+inetAddress+"/"+service+" caught: "+e);
+                logger.info("socket for: "+host+"/"+service+" caught: "+e);
             }
             logger.info("socket: "+socket);
             return socket;
         }
-        private final InetAddress inetAddress;
-        private final int service;
+        final String host;
+        final int service;
         private Socket socket;
     }
     void run() throws IOException { // only run on the server
@@ -57,17 +56,15 @@ public class Home {
         Server server=new Server(group,serverSocket);
         server.start();
     }
-    public static InetAddress inetAddress() {
-        return inetAddress;
-    }
     public static int port(int tabletId) {
-        return port+tabletId;
+        return service+tabletId;
     }
     public static Group group() {
         return group;
     }
     public static Properties load(final InputStream inputStream) { // from jat/
-        final Properties p=new Properties(/*defaultProperties*/); // add defaults
+        final Properties p=new Properties(/*defaultProperties*/); // add
+                                                                  // defaults
         try {
             p.load(inputStream);
         } catch(IOException e) {
@@ -85,53 +82,22 @@ public class Home {
         }
         return p;
     }
-    static void init() {
+    public static void init() { // droid needs this run on a thread!
         Properties properties=load(new File("home.properties"));
-        properties.list(System.out);
-        if(inetAddress==null) {
-            try {
-                inetAddress=InetAddress.getLocalHost(); // must be done for
-                                                        // clients
-                // that's sill, localhost is probably the wrong thing
-            } catch(UnknownHostException e) {
-                System.out.println("can not get internet address of localhost!");
-            }
-        }
-        if(port==null) port=20000; // must be done for home, so he knows what
-                                   // port to use
-        // clients need this also
+        if(properties!=null) properties.list(System.out);
+        else System.out.println("failed to load propertiies!");
+        if(host==null)
+            host="192.168.1.101";
+        if(service==null)
+            service=30_000;
     }
     public static void main(String[] arguments) throws IOException,InterruptedException {
         God.log.init();
         LoggingHandler.setLevel(Level.ALL);
         God.home.init();
-        if(false) {
-            // looks like this is all bogus
-            // he just gets a server socket on some port!
-            // so all these addresses are for the tablets! (clients)
-            InetAddress inetAddress2=InetAddress.getByAddress(new byte[] {(byte)192,(byte)168,1,101});
-            Home.inetAddress=inetAddress2;
-            God.home.init();
-            if(arguments.length>0) // allow override from command line
-            {
-                inetAddress=InetAddress.getByName(arguments[0]);
-                Home.inetAddress=inetAddress;
-            }
-        }
-        Home home=new Home();
-        home.run();
     }
-    // if we are the laptop home server, host is localhost or some variant and
-    // port is home+0
-    // if we are not the home server, then host is some other guy (the laptop),
-    // and his port is 0
-    // what if we are a client, say 1 and we want to be home also?
-    // if we are 1, then host is local host and port is home+0
-    // if we are not 1, then host is 1's ip address and port is home+0
-    // or since we know everyone's ip address, we can just have a conection to
-    // each.
-    public static Integer port;
-    public static InetAddress inetAddress;
+    public static String host;
+    public static Integer service=30_000;
     private static Group group=Group.create(1,1);
     public static final Logger logger=Logger.getLogger(Server.class.getName());
 }

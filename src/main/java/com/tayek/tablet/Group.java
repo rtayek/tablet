@@ -156,7 +156,8 @@ public class Group implements Cloneable {
         // move it to the client or the tablet or the model!
         // perhaps, but maybe exclude the stat and just use to configure the tablets.
         Properties properties=new SortedProperties();
-        properties.put("home",Home.inetAddress.toString());
+        properties.put("home",Home.host.toString());
+        properties.put("service",Home.service.toString());
         properties.put("buttons",model.buttons.toString());
         for(int i=1;i<=model.buttons;i++)
             properties.put("button"+i,model.state(i).toString());

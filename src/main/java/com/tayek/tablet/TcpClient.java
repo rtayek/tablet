@@ -41,7 +41,7 @@ public class TcpClient implements Sender,Runnable { // sender?
     }
     public void connect() throws IOException,InterruptedException {
         if(socket()==null) {
-            GetSocket getSocket=new GetSocket(Home.inetAddress(),Home.port(0));
+            GetSocket getSocket=new GetSocket(Home.host,Home.port(0));
             new Thread(getSocket).start();
             while(getSocket.socket()==null)
                 Thread.sleep(100);

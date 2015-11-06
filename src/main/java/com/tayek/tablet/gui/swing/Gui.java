@@ -312,18 +312,12 @@ public class Gui implements Observer,ActionListener {
         // set ip here
         God.home.init();
         Home home=new Home();
-        
-        System.out.println(home.inetAddress+"/"+home.port);
-        if(false) if(arguments.length>0) {
-            InetAddress inetAddress=InetAddress.getByName(arguments[0]);
-            Home.inetAddress=inetAddress;
-        }
         // android tablets are 1 and 2 for now, so start uo a few other ones.
         if(arguments.length==0) arguments=new String[] {"4","5"};
         for(String arg:arguments) {
             Integer tabletId=Utility.toInteger(arg);
             if(tabletId!=null) {
-                Group group=Home.group().newGroup();
+                Group group=home.group().newGroup();
                 Tablet tablet=group.new Tablet(tabletId);
                 tablet.client().start();
                 if(tablet.client().socket()!=null) {
