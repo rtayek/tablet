@@ -44,7 +44,7 @@ public class TcpClient implements Sender,Runnable { // sender?
     }
     public void start() {
         shuttingDown=false;
-        Socket socket=home.connect();
+        Socket socket=home.connectUsingThread(100);
         System.out.println("start sees socket: "+socket);
         if(socket!=null) {
             setSocket(socket);

@@ -100,12 +100,30 @@ public class Home {
         return socket!=null&&socket.isBound()&&!socket.isClosed()&&socket.isConnected()&&!socket.isInputShutdown()&&!socket.isOutputShutdown();
         // if only one side is shut down, can we use the other side?
     }
-    public Socket connect() {
+    class Connect implements Runnable {
+        Connect(int timeout) {
+            this.timeout=timeout;
+        }
+        @Override public void run() {
+            socket=connect(timeout);
+        }
+        final int timeout;
+        Socket socket;
+    }
+    public Socket connectUsingThread(int timeout) {
+        Connect connect=new Connect(timeout);
+        Thread thread=new Thread(connect,"connect");
+        thread.start();
+        while(thread.isAlive())
+            ;
+        return connect.socket;
+    }
+    private Socket connect(int timeout) {
         SocketAddress socketAddress=new InetSocketAddress(inetAddress,service);
         System.out.println(socketAddress);
         Socket socket=new Socket();
         try {
-            socket.connect(socketAddress,200);
+            socket.connect(socketAddress,timeout);
             System.out.println("returning: "+socket);
             return socket;
         } catch(IOException e) {
