@@ -1,21 +1,25 @@
-package com.tayek.tablet;
+package com.tayek.tablet.model;
 import java.net.*;
 import java.util.*;
 import java.util.logging.Logger;
 import com.tayek.audio.*;
 import com.tayek.audio.Audio.Sound;
-import com.tayek.tablet.Message.*;
+import com.tayek.tablet.*;
+import com.tayek.tablet.model.Message.*;
 import com.tayek.utilities.*;
-public class Model extends Observable implements Receiver,Cloneable {
-    public Model() {
-        this(Group.defaultButtons);
+public class Model extends Observable implements Receiver<Message>,Cloneable {
+    public Model(int buttons) {
+        this(buttons,++ids);
     }
-    Model(int buttons) {
+    private Model(int buttons,int serialNumber) {
+        this.serialNumber=serialNumber; // so clones will have the same serial
+                                        // number
         this.buttons=buttons;
         states=new Boolean[buttons];
         reset();
     }
     public void reset() {
+        System.out.println("reset");
         synchronized(states) {
             for(int i=1;i<=buttons;i++)
                 setState(i,false);
@@ -39,43 +43,40 @@ public class Model extends Observable implements Receiver,Cloneable {
             super(message.tabletId,message.button,message.state);
         }
     }
-    @Override public void receive(Object object) {
-        if(object!=null) {
-            logger.fine("received message: "+object);
-            if(object instanceof Message) {
-                Message message=(Message)object;
-                switch(message.type) {
-                    case normal:
-                        if(message.state.equals(true)) {
-                            synchronized(idToLastOnFrom) {
-                                idToLastOnFrom.put(message.button,message.tabletId);
-                            }
-                            if(!state(message.button).equals(message.state)) {
-                                // hint from set state is/was button id.
-                                // new hint should be state changed
-                                // (boolean,who)
-                                Hint hint=new Hint(message);
-                                int n=random.nextInt(Sound.values().length);
-                                setChangedAndNotify(Sound.values()[n]);
-                            } else System.out.println("no change");
+    @Override public void receive(Message message) {
+        if(message!=null) {
+            logger.fine("received message: "+message);
+            switch(message.type) {
+                case normal:
+                    if(message.state.equals(true)) {
+                        synchronized(idToLastOnFrom) {
+                            idToLastOnFrom.put(message.button,message.tabletId);
                         }
-                        setState(message.button,message.state);
-                        break;
-                    case start:
-                        InetAddress inetAddress=Utility.inetAddress(message.button);
-                        System.out.println("message had ip address: "+inetAddress+" "+message);
-                        break;
-                    case hello:
-                        inetAddress=Utility.inetAddress(message.button);
-                        System.out.println("message had ip address: "+inetAddress+" "+message);
-                        break;
-                    case goodbye:
-                        break;
-                    default:
-                        throw new RuntimeException("message type: "+message.type+" was not handled!");
-                }
-            } else System.out.println("not our message!");
-        }else System.out.println(this+ "reeived null message!");
+                        if(!state(message.button).equals(message.state)) {
+                            // hint from set state is/was button id.
+                            // new hint should be state changed
+                            // (boolean,who)
+                            Hint hint=new Hint(message);
+                            int n=random.nextInt(Sound.values().length);
+                            setChangedAndNotify(Sound.values()[n]);
+                        } else System.out.println("no change");
+                    }
+                    setState(message.button,message.state);
+                    break;
+                case start:
+                    InetAddress inetAddress=Utility.inetAddress(message.button);
+                    System.out.println("message had ip address: "+inetAddress+" "+message);
+                    break;
+                case hello:
+                    inetAddress=Utility.inetAddress(message.button);
+                    System.out.println("message had ip address: "+inetAddress+" "+message);
+                    break;
+                case goodbye:
+                    break;
+                default:
+                    throw new RuntimeException("message type: "+message.type+" was not handled!");
+            }
+        } else System.out.println(this+"reeived null message!");
     }
     public Boolean state(Integer id) {
         synchronized(states) {
@@ -90,7 +91,7 @@ public class Model extends Observable implements Receiver,Cloneable {
         }
     }
     @Override public String toString() {
-        String s="{";
+        String s="("+serialNumber+"): {";
         synchronized(states) {
             for(boolean state:states)
                 s+=state?'T':"F";
@@ -113,7 +114,7 @@ public class Model extends Observable implements Receiver,Cloneable {
         return areEqual;
     }
     public static void main(String[] args) throws Exception {
-        Model model=new Model();
+        Model model=new Model(7);
         model.addObserver(ModelObserver.instance);
         model.state(1);
         System.out.println(model);
@@ -121,10 +122,10 @@ public class Model extends Observable implements Receiver,Cloneable {
         model.receive(message);
     }
     public Object clone() {
-        Model clone=new Model(buttons);
+        Model clone=new Model(buttons,serialNumber);
         return clone;
     }
-    public final int serialNumber=++ids;
+    public final int serialNumber;
     public final Integer buttons;
     private final Boolean[] states;
     public final Map<Integer,Integer> idToLastOnFrom=new TreeMap<>();

@@ -1,8 +1,9 @@
-package com.tayek.tablet;
+package com.tayek.tablet.model;
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
 import java.util.logging.Logger;
+import com.tayek.tablet.*;
 import com.tayek.utilities.*;
 public class Message implements java.io.Serializable {
     public enum Type {
@@ -15,13 +16,10 @@ public class Message implements java.io.Serializable {
         }
     }
     private static final long serialVersionUID=1L;
-    public Message(int groupId,int from,Type type,InetAddress address) {
-        this(groupId,from,type,Utility.toInteger(address)); // hello
-    }
     public Message(int groupId,int from,Type type,int extra) {
         this(groupId,from,type,extra,false);
     }
-    public Message(int groupId,int from,Type type,int button,boolean state) {
+    public Message(Integer groupId,Integer from,Type type,Integer button,boolean state) {
         this.groupId=groupId;
         this.tabletId=from;
         this.type=type;
@@ -33,12 +31,10 @@ public class Message implements java.io.Serializable {
         void send(Message message) throws IOException;
         Logger logger=Logger.getLogger(Sender.class.getName());
     }
-    public interface Receiver {
+    public interface Receiver<T> {
         // change this so it does not throw!
-        // consider changing to receive object - more flexible
-        // so it's just a plain old callback
-        // no, use comment field to pass info
-        void receive(Object object) throws IOException;
+        // let's try that now!
+        void receive(T message) /*throws IOException*/;
         Logger logger=Logger.getLogger(Receiver.class.getName());
     }
     public boolean isNormal() {
@@ -73,7 +69,7 @@ public class Message implements java.io.Serializable {
         logger.finest("Message.from is returning: "+message);
         return message;
     }
-    public static Message process(int groupId,Receiver receiver,SocketAddress socketAddress,String string) {
+    public static Message process(int groupId,Receiver<Message> receiver,SocketAddress socketAddress,String string) {
         Message message=Message.from(string);
         if(message!=null) {
             if(message.groupId.equals(groupId)) {
@@ -100,7 +96,6 @@ public class Message implements java.io.Serializable {
         set.add(Sender.class);
         set.add(Receiver.class);
         set.add(Model.class);
-        set.add(Udp.class);
         set.add(MyTimer.class);
     }
     public static final Map<Class<?>,Logger> map=LoggingHandler.makeMapAndSetLevels(set);

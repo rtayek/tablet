@@ -32,6 +32,7 @@ import com.tayek.audio.ModelObserver;
 import com.tayek.tablet.*;
 import com.tayek.tablet.Group.Tablet;
 import com.tayek.tablet.gui.common.*;
+import com.tayek.tablet.model.*;
 import com.tayek.utilities.*;
 import com.tayek.gui.*;
 public class Gui implements Observer,ActionListener {
@@ -310,30 +311,35 @@ public class Gui implements Observer,ActionListener {
         return textView;
     }
     // idea: make the gui classes inner to the mediator
+    public static void start(Home home,Integer tabletId) {
+        Group group=home.group().newGroup();
+        Tablet tablet=group.new Tablet(tabletId);
+        tablet.client().start();
+        if(tablet.client().socket()!=null) {
+            // see if we can set this at startup?
+            InetAddress inetAddress=group.checkForInetAddress(tabletId,tablet.client().socket());
+            int address=inetAddress!=null?Utility.toInteger(inetAddress):0;
+            Message message=new Message(group.groupId,tabletId,Message.Type.start,address);
+            tablet.client().send(message);
+        } // get a clone
+        startGui(tablet);
+    }
+    public static void start(Home home,String[] arguments) {
+        for(String arg:arguments) {
+            Integer tabletId=Utility.toInteger(arg);
+            if(tabletId!=null) {
+                start(home,tabletId);
+            } else System.out.println(arg+" is not a valid tabletId");
+        }
+    }
     public static void main(String[] arguments) throws IOException,InterruptedException {
         God.log.init();
         LoggingHandler.setLevel(Level.ALL);
         // set ip here
-        God.home.init();
         Home home=new Home();
         // android tablets are 1 and 2 for now, so start uo a few other ones.
         if(arguments.length==0) arguments=new String[] {"4","5"};
-        for(String arg:arguments) {
-            Integer tabletId=Utility.toInteger(arg);
-            if(tabletId!=null) {
-                Group group=home.group().newGroup();
-                Tablet tablet=group.new Tablet(tabletId);
-                tablet.client().start();
-                if(tablet.client().socket()!=null) {
-                    // see if we can set this at startup?
-                    InetAddress inetAddress=group.checkForInetAddress(tabletId,tablet.client().socket());
-                    int address=inetAddress!=null?Utility.toInteger(inetAddress):0;
-                    Message message=new Message(group.groupId,tabletId,Message.Type.start,address);
-                    tablet.client().send(message);
-                } // get a clone
-                startGui(tablet);
-            } else System.out.println(arg+" is not a valid tabletId");
-        }
+        start(home,arguments);
     }
     final int tabletId;
     final Model model;

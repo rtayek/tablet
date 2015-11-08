@@ -3,8 +3,8 @@ import static com.tayek.utilities.Utility.*;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import com.tayek.tablet.Message;
 import com.tayek.tablet.Group.*;
+import com.tayek.tablet.model.Message;
 import com.tayek.utilities.*;
 // could be more than one instance
 public class AndroidGui {
@@ -49,15 +49,7 @@ public class AndroidGui {
                     e.printStackTrace();
                 }
                 Et dt=new Et();
-                if(tablet.client()!=null) try {
-                    try {
-                        tablet.client().start();
-                    } catch(InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                } catch(IOException e) {
-                    e.printStackTrace();
-                }
+                if(tablet.client()!=null) tablet.client().start();
                 printThreads();
                 tablet.logger.info("start client took: "+dt);
             }
@@ -72,7 +64,8 @@ public class AndroidGui {
             @Override public void run() {
                 Et dt=new Et();
                 int address=0;
-                if(tablet.group().inetAddress(tablet.client().tabletId())!=null) address=Utility.toInteger(tablet.group().inetAddress(tablet.client().tabletId()));
+                if(tablet.group().inetAddress(tablet.client().tabletId())!=null)
+                    address=Utility.toInteger(tablet.group().inetAddress(tablet.client().tabletId()));
                 Message message=new Message(tablet.group().groupId,tablet.client().tabletId(),Message.Type.start,address);
                 tablet.client().send(message);
                 tablet.logger.info("send messages took "+dt);

@@ -1,7 +1,7 @@
 package com.tayek.tablet.gui.common;
 import static com.tayek.utilities.Utility.printThreads;
-import com.tayek.tablet.Message;
 import com.tayek.tablet.gui.swing.Gui;
+import com.tayek.tablet.model.Message;
 import com.tayek.tablet.Group.Tablet;
 public enum TabletMenuItem {
     Reset,Ping,Disconnect,Connect,Log;

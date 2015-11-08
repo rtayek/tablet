@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 import org.junit.*;
 import com.tayek.audio.*;
-import com.tayek.tablet.Message;
+import com.tayek.tablet.model.*;
 
 public class ModelTestCase {
     @BeforeClass public static void setUpBeforeClass() throws Exception {}

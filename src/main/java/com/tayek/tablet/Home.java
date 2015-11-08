@@ -3,63 +3,40 @@ import java.io.*;
 import java.net.*;
 import java.util.Properties;
 import java.util.logging.*;
-import com.tayek.tablet.Home.GetSocket;
 import com.tayek.utilities.*;
 public class Home {
+    public Home(Group group) {
+        this.group=group;
+        if(staticInetAddress==null) {
+            God.home.init();
+            if(staticInetAddress==null) throw new RuntimeException(" can not get inetAddress!");
+        }
+        inetAddress=staticInetAddress;
+    }
+    public Home() {
+        this(Group.create(1,1));
+    }
     // every client has a group (all the same)
     // every client has info about tablet 0 (the current home)
     // home on the laptop needs to have the same group
     // he will have info about all of the tablets
     // maybe a tablet will be able to be a home.
     // so the groups need to be the same, but separate instances.
-    // now that we have clone, maybe each clieint should have a home
-    // since it's just a group with an ip and a port
-    // also, if we could clone the models from it
-    // then it's like a factory that can move around
-    public static class GetSocket implements Runnable {
-        public GetSocket(String host,int service) {
-            this.host=host;
-            this.service=service;
+    // so we have clone.
+    // write a command line ui for this!
+    // http://stackoverflow.com/questions/18153644/android-asynctask-and-threading
+    public ServerSocket getServerSocket() {
+        try {
+            return new ServerSocket(port(0));
+        } catch(IOException e) {
+            System.out.println("caught: "+e);
         }
-        // expand this class. make it more usable
-        // also, make this work like it does on the droid
-        // i.e. use the thread and wait or time out
-        @Override public void run() {
-            socket=get();
-            logger.info("got socket: "+socket);
-        }
-        public Socket socket() {
-            return socket;
-        }
-        public Socket get() { // for clients to connect to
-            Socket socket=null;
-            try {
-                socket=new Socket(host,service);
-            } catch(IOException e) {
-                logger.info("socket for: "+host+"/"+service+" caught: "+e);
-            }
-            logger.info("socket: "+socket);
-            return socket;
-        }
-        final String host;
-        final int service;
-        private Socket socket;
+        return null;
     }
-    void run() throws IOException { // only run on the server
-        ServerSocket serverSocket=new ServerSocket(port(0));
-        Group group=Group.create(1,1);
-        // belongs in some config or properties file.
-        Properties properties=group.properties();
-        Writer writer=new FileWriter(new File("home.properties"));
-        properties.store(writer,null);
-        writer.close();
-        Server server=new Server(group,serverSocket);
-        server.start();
-    }
-    public static int port(int tabletId) {
+    public int port(int tabletId) {
         return service+tabletId;
     }
-    public static Group group() {
+    public Group group() {
         return group;
     }
     public static Properties load(final InputStream inputStream) { // from jat/
@@ -82,24 +59,78 @@ public class Home {
         }
         return p;
     }
-    public static void init() { // droid needs this run on a thread!
-        Properties properties=load(new File("home.properties"));
-        if(properties!=null) properties.list(System.out);
-        else System.out.println("failed to load propertiies!");
-        if(host==null)
-            host="192.168.1.100";
-        if(service==null)
-            service=30_000;
+    // looks like we need a swicth:
+    // if we are a client, use host
+    // if we are home, set host to localhost
+    static void init() { // droid needs this run on a thread!
+        if(false) { // get as much as possoble from properties file
+            Properties properties=load(new File("home.properties"));
+            if(properties!=null) properties.list(System.out);
+            else System.out.println("failed to load propertiies!");
+        }
+        if(host==null) host="192.168.1.101";
+        if(service==null) service=30_000;
+        if(staticInetAddress==null) try {
+            staticInetAddress=InetAddress.getByName(host);
+            System.out.println("home inet address: "+staticInetAddress);
+        } catch(UnknownHostException e) {
+            System.out.println("home caught: "+e);
+            System.out.println("home init failed!");
+        }
+    }
+    Properties properties() { // this will not have the right buttons for each
+        // tablet!
+        // move it to the client or the tablet or the model!
+        // perhaps, but maybe exclude the stat and just use to configure the
+        // tablets.
+        Properties properties=new SortedProperties();
+        properties.put("home",Home.host.toString());
+        properties.put("service",Home.service.toString());
+        properties.put("buttons",group.newModel().buttons.toString());
+        // for(int i=1;i<=model.buttons;i++)
+        // properties.put("button"+i,model.state(i).toString());
+        for(Integer i:group.info.keySet()) // will be home's info now!
+            properties.put("tablet"+i,group.info.get(i).toString());
+        return properties;
+    }
+    public InetAddress getInetAddress() {
+        return inetAddress;
+    }
+    public boolean isConnectedx(Socket socket) {
+        return socket!=null&&socket.isBound()&&!socket.isClosed()&&socket.isConnected()&&!socket.isInputShutdown()&&!socket.isOutputShutdown();
+        // if only one side is shut down, can we use the other side?
+    }
+    public Socket connect() {
+        SocketAddress socketAddress=new InetSocketAddress(inetAddress,service);
+        System.out.println(socketAddress);
+        Socket socket=new Socket();
+        try {
+            socket.connect(socketAddress,200);
+            System.out.println("returning: "+socket);
+            return socket;
+        } catch(IOException e) {
+            System.out.println(this+" caught: "+e);
+        }
+        return null;
     }
     public static void main(String[] arguments) throws IOException,InterruptedException {
         God.log.init();
         LoggingHandler.setLevel(Level.ALL);
-        God.home.init();
         Home home=new Home();
-        home.run();
+        ServerSocket serverSocket=new ServerSocket(home.port(0));
+        Group group=home.group();
+        // belongs in some config or properties file.
+        Properties properties=home.properties();
+        Writer writer=new FileWriter(new File("home.properties"));
+        properties.store(writer,null);
+        writer.close();
+        Server server=new Server(group,serverSocket);
+        server.start();
     }
-    public static String host;
-    public static Integer service=30_000;
-    private static Group group=Group.create(1,1);
-    public static final Logger logger=Logger.getLogger(Server.class.getName());
+    private InetAddress inetAddress;
+    private final Group group;
+    private static String host;
+    private static Integer service=30_000;
+    private static InetAddress staticInetAddress;
+    public static final Logger logger=Logger.getLogger(Home.class.getName());
 }

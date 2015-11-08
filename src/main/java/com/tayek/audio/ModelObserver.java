@@ -1,7 +1,7 @@
 package com.tayek.audio;
 import java.util.*;
 import com.tayek.audio.Audio.Sound;
-import com.tayek.tablet.Model;
+import com.tayek.tablet.model.Model;
 public class ModelObserver implements Observer {
     @Override public void update(Observable model,Object hint) {
         if(model instanceof Model) {

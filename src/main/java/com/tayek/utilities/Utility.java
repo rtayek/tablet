@@ -70,14 +70,6 @@ public class Utility {
     public static DatagramSocket createSocket() throws SocketException {
         return new DatagramSocket(null);
     }
-    public static DatagramSocket bind(int tabletId) throws SocketException,UnknownHostException {
-        DatagramSocket socket=createSocket();
-        socket.setReuseAddress(true);
-        SocketAddress address=new InetSocketAddress(InetAddress.getLocalHost(),Home.port(tabletId));
-        socket.bind(address);
-        // printSocket(socket,"bind");
-        return socket;
-    }
     public static void send(Object message,InetAddress ipAddress,int destinationPort,DatagramSocket socket) throws IOException {
         byte[] buffer=message.toString().getBytes();
         DatagramPacket packet=new DatagramPacket(buffer,buffer.length,ipAddress,destinationPort);

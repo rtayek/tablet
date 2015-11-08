@@ -16,7 +16,5 @@ public enum God {
             System.out.println("also next");
         }
     };
-    public void init() {
-        throw new RuntimeException("override this!");
-    }
+    abstract public void init();
 }

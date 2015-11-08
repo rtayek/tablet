@@ -1,7 +1,7 @@
 package com.tayek.tablet.gui.common;
 import java.util.Observable;
 import java.util.Observer;
-import com.tayek.tablet.Model;
+import com.tayek.tablet.model.Model;
 public abstract class GuiAdapterABC implements GuiAdapter,Observer {
     public GuiAdapterABC(Model model) {
         this.model=model;

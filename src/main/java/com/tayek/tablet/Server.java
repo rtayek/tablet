@@ -3,8 +3,9 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.logging.*;
-import com.tayek.tablet.Message.*;
 import com.tayek.tablet.Group.*;
+import com.tayek.tablet.model.Message;
+import com.tayek.tablet.model.Message.*;
 import com.tayek.utilities.*;
 // tcp on laptop works fine
 // and can discover all of the tablets if the phone home on startup once.
@@ -69,36 +70,37 @@ public class Server implements Runnable {
         final Set<TcpConnection> connections=new LinkedHashSet<>();
     }
     public Server(Group group,ServerSocket serverSocket) {
-        this.group=group.newGroup(); // clone it
+        this.group=group;
         homeInetAddress=serverSocket.getInetAddress();
         System.out.println(serverSocket);
         if(serverSocket!=null) {
             acceptor=new Acceptor(serverSocket);
             System.out.println(acceptor);
-        }
-        else acceptor=null;
+        } else acceptor=null;
     }
     void processControlMessage(Message message) {
         if(message.type.equals(Type.start)) {
             System.out.println("start from: "+message.tabletId);
             System.out.println("-----------------------------");
-            System.out.println("home knows:");
+            System.out.print("home knows:");
             group.print();
-            // do i know this guys ip?
-            if(group.inetAddress(message.tabletId)==null) {
-                // maybe should be ==null?
+            if(group.inetAddress(message.tabletId)!=null) { // unknown?
                 // leave this non static
                 int address=Utility.toInteger(homeInetAddress);
                 Message start=new Message(group.groupId,0,Type.start,address);
-                messages.addElement(start);
+                if(false) // just to see what happens
+                    messages.addElement(start); // send him a start
                 // the above does not make sense
                 // he knows me, since he sent me a message.
+       
                 // if i do not know him, maybe i should send
-                // him a start then.
+                // him a start then. or maybe a hello is more appropriate?
                 //
                 if(special.contains(message.tabletId)) {
                     // System.out.println(message);
                 }
+            } else {
+                System.out.println(" i don't know: "+message.tabletId);
             }
             System.out.println("-----------------------------");
         }
@@ -178,15 +180,13 @@ public class Server implements Runnable {
                                 // blank
                             } else {
                                 Message message=Message.from(string);
-                                if(message.groupId==group.groupId) {
+                                if(message.groupId.equals(group.groupId)) {
                                     if(connection.tabletId.equals(illegalTabletId)) connection.tabletId=message.tabletId;
-                                    Group.captureInetAddress(group,connection.socket,message);
+                                    group.captureInetAddress(connection.socket,message);
                                     logger.fine("added: "+message+" to queue.");
                                     messages.addElement(message);
-                                } else {
-                                    System.out.println("message is from foreign group! "+message);
-                                    // maybe give him some address info
-                                }
+                                } else System.out.println("group: "+group.groupId+" received message from foreign group! "+message);
+                                // maybe give him some address info
                             }
                         }
                     } catch(IOException e) {
@@ -209,10 +209,10 @@ public class Server implements Runnable {
     }
     public static void main(String[] args) throws IOException,InterruptedException {
         God.log.init();
-        LoggingHandler.setLevel(Level.OFF);
-        God.home.init();
-        ServerSocket serverSocket=new ServerSocket(Home.port(0));
-        Group group=Group.create(1,1);
+        LoggingHandler.setLevel(Level.ALL);
+        Home home=new Home();
+        ServerSocket serverSocket=home.getServerSocket();
+        Group group=home.group();
         Server server=new Server(group,serverSocket);
         server.start();
     }

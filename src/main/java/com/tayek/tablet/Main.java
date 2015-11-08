@@ -16,9 +16,6 @@ public class Main {
                 add(Server.class);
                 add(Tablet.class);
                 add(Gui.class);
-                add(Udp.class);
-                add(UdpFactory.class);
-                add(Factory.class);
             }
         };
         dispatcher.run();
