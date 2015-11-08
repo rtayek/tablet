@@ -68,7 +68,7 @@ public class Home {
             if(properties!=null) properties.list(System.out);
             else System.out.println("failed to load propertiies!");
         }
-        if(host==null) host="192.168.1.101";
+        if(host==null) host="192.168.1.102";
         if(service==null) service=30_000;
         if(staticInetAddress==null) try {
             staticInetAddress=InetAddress.getByName(host);

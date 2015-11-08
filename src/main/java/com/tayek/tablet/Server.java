@@ -88,7 +88,7 @@ public class Server implements Runnable {
                 // leave this non static
                 int address=Utility.toInteger(homeInetAddress);
                 Message start=new Message(group.groupId,0,Type.start,address);
-                if(false) // just to see what happens
+                if(true) // just to see what happens
                     messages.addElement(start); // send him a start
                 // the above does not make sense
                 // he knows me, since he sent me a message.
