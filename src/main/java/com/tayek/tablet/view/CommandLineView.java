@@ -11,7 +11,7 @@ public class CommandLineView implements Observer {
             System.out.println(this+" "+id+" received update: "+observable+" "+hint);
             if(hint instanceof Group) {
                 System.out.print("in update: ");
-                ((Group)hint).print();
+                ((Group)hint).print(-1);
             }
         } else System.out.println(this+" "+id+" not our model!");
         else System.out.println(this+" "+id+" not a model!");

@@ -313,13 +313,13 @@ public class Gui implements Observer,ActionListener {
     // idea: make the gui classes inner to the mediator
     public static void start(Home home,Integer tabletId) {
         Group group=home.group().newGroup();
-        Tablet tablet=group.new Tablet(tabletId);
+        Tablet tablet=group.new Tablet(home,tabletId);
         tablet.client().start();
         if(tablet.client().socket()!=null) {
-            // see if we can set this at startup?
+            // see if we can set this when starting up?
             InetAddress inetAddress=group.checkForInetAddress(tabletId,tablet.client().socket());
             int address=inetAddress!=null?Utility.toInteger(inetAddress):0;
-            Message message=new Message(group.groupId,tabletId,Message.Type.start,address);
+            Message message=new Message(group.groupId,tabletId,Message.Type.startup,address);
             tablet.client().send(message);
         } // get a clone
         startGui(tablet);
@@ -337,8 +337,15 @@ public class Gui implements Observer,ActionListener {
         LoggingHandler.setLevel(Level.ALL);
         // set ip here
         Home home=new Home();
-        // android tablets are 1 and 2 for now, so start uo a few other ones.
-        if(arguments.length==0) arguments=new String[] {"4","5"};
+        // 1android tablets are 1 and 2 for now, so start uo a few other ones.
+        if(arguments.length==0) if(false) arguments=new String[] {"1","2"};
+        else {
+            Set<String> set=new TreeSet<>();
+            for(Integer tabletId:home.group().info().keySet())
+                if(!tabletId.equals(0)) set.add(""+tabletId);
+            arguments=set.toArray(new String[0]);
+            System.out.println(set);
+        }
         start(home,arguments);
     }
     final int tabletId;
@@ -351,7 +358,7 @@ public class Gui implements Observer,ActionListener {
     public JFrame frame;
     final Logger logger=Logger.getLogger(getClass().getName());
     public static final Map<Integer,Color> defaultIdToColor;
-    static {
+    static { // this belongs in group!
         Map<Integer,Color> temp=new LinkedHashMap<>();
         temp.put(1,Color.red);
         temp.put(2,Color.orange);

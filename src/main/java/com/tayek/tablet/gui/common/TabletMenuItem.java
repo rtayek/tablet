@@ -26,7 +26,7 @@ public enum TabletMenuItem {
                 if(tablet.client()!=null) {
                     // maybe i have to close down my connection?
                     // and then reconnect?
-                    Message message=new Message(tablet.group().groupId,tablet.client().tabletId(),Message.Type.start,0);
+                    Message message=new Message(tablet.group().groupId,tablet.client().tabletId(),Message.Type.startup,0);
                     tablet.client().send(message);
                 }
                 break;

@@ -16,8 +16,9 @@ import com.tayek.utilities.*;
 // maybe all of my stuff should use a callback
 public class TcpClient implements Sender,Runnable { // sender?
     // one instance per tablet - uses home
-    public TcpClient(Group group,int tabletId,Receiver<Message> receiver) {
+    public TcpClient(Home home,Group group,int tabletId,Receiver<Message> receiver) {
         // reduce visibility and put create back in when the dust settles
+        this.home=home;
         this.group=group;
         this.tabletId=tabletId;
         this.receiver=receiver;
@@ -109,10 +110,14 @@ public class TcpClient implements Sender,Runnable { // sender?
             if(message.tabletId.equals(tabletId)) logger.finest(tabletId+" received: "+message+" (from self).");
             else {
                 logger.finer(tabletId+" received: "+message);
-                group.captureInetAddress(socket,message);
+                group.captureInetAddress(tabletId,socket,message);
                 if(receiver!=null) {
                     receiver.receive(message);
                 } else logger.warning(this+" has a null receiver!");
+                if(message.type.equals(Type.startup)) {
+                    Message reply=new Message(group.groupId,tabletId,Type.hello,0);
+                    send(reply);
+                }
             }
             Thread.yield();
         }
@@ -152,16 +157,16 @@ public class TcpClient implements Sender,Runnable { // sender?
         LoggingHandler.setLevel(Level.ALL);
         Home home=new Home();
         Set<TcpClient> clients=new LinkedHashSet<>();
-        for(int tabletId:home.group().info.keySet()) { // use home's id's
+        for(int tabletId:home.group().info().keySet()) { // use home's id's
             Group group=home.group().newGroup(); // clone the group
-            TcpClient client=new TcpClient(group,tabletId,null);
+            TcpClient client=new TcpClient(home,group,tabletId,null);
             clients.add(client);
             client.start();
             if(client.socket()!=null) {
                 // see if we can set this at startup?
                 InetAddress inetAddress=group.checkForInetAddress(tabletId,client.socket());
                 int address=inetAddress!=null?Utility.toInteger(inetAddress):0;
-                Message message=new Message(group.groupId,tabletId,Message.Type.start,address);
+                Message message=new Message(group.groupId,tabletId,Message.Type.startup,address);
                 client.send(message);
             }
         }
@@ -169,12 +174,10 @@ public class TcpClient implements Sender,Runnable { // sender?
         for(TcpClient client:clients)
             client.stop();
         System.out.println("--------------------");
-        for(TcpClient client:clients) {
-            System.out.println(client.tabletId+" knows: ");
-            client.group.print();
-        }
+        for(TcpClient client:clients)
+            client.group.print(client.tabletId);
     }
-    Home home=new Home();
+    final Home home;
     Thread thread;
     final Group group;
     public final Integer tabletId;

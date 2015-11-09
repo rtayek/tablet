@@ -9,14 +9,14 @@ public class Model extends Observable implements Receiver<Message>,Cloneable {
     public Model() {
         this(Factory.defaultButtons);
     }
-    Model(int buttons) {
+    Model(Integer buttons) {
         this.buttons=buttons;
         states=new Boolean[buttons];
         reset();
     }
     public void reset() {
         synchronized(states) {
-            for(int i=1;i<=buttons;i++)
+            for(Integer i=1;i<=buttons;i++)
                 setState(i,false);
         }
     }
@@ -27,10 +27,10 @@ public class Model extends Observable implements Receiver<Message>,Cloneable {
     public int fromBoolean(boolean state) {
         return !state?0:1;
     }
-    public void setState(Integer id,Boolean state) {
+    public void setState(Integer buttonId,Boolean state) {
         synchronized(states) {
-            states[id-1]=state;
-            setChangedAndNotify(id);
+            states[buttonId-1]=state;
+            setChangedAndNotify(buttonId);
         }
     }
     public static class Hint extends Triple<Integer,Integer,Boolean> {
@@ -59,11 +59,11 @@ public class Model extends Observable implements Receiver<Message>,Cloneable {
                 break;
             case start:
                 InetAddress inetAddress=Utility.inetAddress(message.button);
-                System.out.println("message had ip address: "+inetAddress+" "+message);
+                logger.fine("message had ip address: "+inetAddress+" "+message);
                 break;
             case hello:
                 inetAddress=Utility.inetAddress(message.button);
-                System.out.println("message had ip address: "+inetAddress+" "+message);
+                logger.fine("message had ip address: "+inetAddress+" "+message);
                 break;
             case goodbye:
                 break;
@@ -99,7 +99,7 @@ public class Model extends Observable implements Receiver<Message>,Cloneable {
     public static synchronized boolean areAllButtonsInTheSameState(Model model,Model model2) {
         boolean areEqual=true;
         final Boolean[] states=model.states(),states2=model2.states();
-        for(int i=0;i<model.buttons;i++)
+        for(Integer i=0;i<model.buttons;i++)
             if(!states[i].equals(states2[i])) {
                 areEqual=false;
                 break;
@@ -110,7 +110,7 @@ public class Model extends Observable implements Receiver<Message>,Cloneable {
         Model clone=new Model(buttons);
         return clone;
     }
-    public final int serialNumber=++ids;
+    public final Integer serialNumber=++ids;
     public final Integer buttons;
     private final Boolean[] states;
     public final Map<Integer,Integer> idToLastOnFrom=new TreeMap<>();

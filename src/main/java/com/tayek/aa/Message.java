@@ -60,7 +60,7 @@ public class Message implements java.io.Serializable {
         logger.fine("Message.from is returning: "+message);
         return message;
     }
-    public static Message process(int groupId,Receiver<Message> receiver,SocketAddress socketAddress,String string) {
+    public static Message process(Integer groupId,Receiver<Message> receiver,SocketAddress socketAddress,String string) {
         Message message=null;
         try {
             message=Message.from(string);

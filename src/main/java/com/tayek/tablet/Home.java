@@ -1,20 +1,42 @@
 package com.tayek.tablet;
 import java.io.*;
 import java.net.*;
-import java.util.Properties;
+import java.util.*;
 import java.util.logging.*;
+import com.tayek.tablet.model.Model;
 import com.tayek.utilities.*;
 public class Home {
-    public Home(Group group) {
-        this.group=group;
-        if(staticInetAddress==null) {
-            God.home.init();
-            if(staticInetAddress==null) throw new RuntimeException(" can not get inetAddress!");
-        }
-        inetAddress=staticInetAddress;
-    }
+    //https://medium.com/android-news/8-ways-to-do-asynchronous-processing-in-android-and-counting-f634dc6fae4e
     public Home() {
-        this(Group.create(1,1));
+        this(loadProperties(new SortedProperties(),"home.properties"));
+    }
+    public Home(Properties properties) {
+        host=properties.getProperty("host");
+        try {
+            inetAddress=InetAddress.getByName(host);
+        } catch(UnknownHostException e) {
+            System.out.println("caught: "+e);
+        }
+        service=Integer.valueOf(properties.getProperty("service"));
+        Set<Integer> tabletIds=new TreeSet<>();
+        String groupPrefix="group",tabletPrefix="tablet";
+        Integer groupId=0;
+        for(Object object:properties.keySet()) {
+            Object value=properties.getProperty(object.toString());
+            String key=object.toString();
+            System.out.println(key+" "+value);
+            if(key.equals(groupPrefix)) {
+                Integer id=Integer.valueOf(value.toString());
+                groupId=id;
+            }
+            if(key.startsWith(tabletPrefix)) {
+                Integer tabletId=Integer.valueOf(key.substring(tabletPrefix.length()));
+                tabletIds.add(tabletId);
+            }
+        }
+        System.out.println("tablet id's for home group are: "+tabletIds);
+        group=new Group(groupId,tabletIds);
+        System.out.println("home group is: "+group);
     }
     // every client has a group (all the same)
     // every client has info about tablet 0 (the current home)
@@ -39,59 +61,10 @@ public class Home {
     public Group group() {
         return group;
     }
-    public static Properties load(final InputStream inputStream) { // from jat/
-        final Properties p=new Properties(/*defaultProperties*/); // add
-                                                                  // defaults
-        try {
-            p.load(inputStream);
-        } catch(IOException e) {
-            throw new RuntimeException(e);
-        }
-        return p;
-    }
-    public static Properties load(final File propertiesFile) { // from jat/
-        Properties p=null;
-        try {
-            final InputStream in=new FileInputStream(propertiesFile);
-            p=load(in);
-        } catch(FileNotFoundException e) {
-            System.out.println(e);
-        }
-        return p;
-    }
     // looks like we need a swicth:
     // if we are a client, use host
     // if we are home, set host to localhost
     static void init() { // droid needs this run on a thread!
-        if(false) { // get as much as possoble from properties file
-            Properties properties=load(new File("home.properties"));
-            if(properties!=null) properties.list(System.out);
-            else System.out.println("failed to load propertiies!");
-        }
-        if(host==null) host="192.168.1.102";
-        if(service==null) service=30_000;
-        if(staticInetAddress==null) try {
-            staticInetAddress=InetAddress.getByName(host);
-            System.out.println("home inet address: "+staticInetAddress);
-        } catch(UnknownHostException e) {
-            System.out.println("home caught: "+e);
-            System.out.println("home init failed!");
-        }
-    }
-    Properties properties() { // this will not have the right buttons for each
-        // tablet!
-        // move it to the client or the tablet or the model!
-        // perhaps, but maybe exclude the stat and just use to configure the
-        // tablets.
-        Properties properties=new SortedProperties();
-        properties.put("home",Home.host.toString());
-        properties.put("service",Home.service.toString());
-        properties.put("buttons",group.newModel().buttons.toString());
-        // for(int i=1;i<=model.buttons;i++)
-        // properties.put("button"+i,model.state(i).toString());
-        for(Integer i:group.info.keySet()) // will be home's info now!
-            properties.put("tablet"+i,group.info.get(i).toString());
-        return properties;
     }
     public InetAddress getInetAddress() {
         return inetAddress;
@@ -100,25 +73,8 @@ public class Home {
         return socket!=null&&socket.isBound()&&!socket.isClosed()&&socket.isConnected()&&!socket.isInputShutdown()&&!socket.isOutputShutdown();
         // if only one side is shut down, can we use the other side?
     }
-    class Connect implements Runnable {
-        Connect(int timeout) {
-            this.timeout=timeout;
-        }
-        @Override public void run() {
-            socket=connect(timeout);
-        }
-        final int timeout;
-        Socket socket;
-    }
-    public Socket connectUsingThread(int timeout) {
-        Connect connect=new Connect(timeout);
-        Thread thread=new Thread(connect,"connect");
-        thread.start();
-        while(thread.isAlive())
-            ;
-        return connect.socket;
-    }
     private Socket connect(int timeout) {
+        System.out.println("connecting to: "+inetAddress+"/"+service+" "+timeout);
         SocketAddress socketAddress=new InetSocketAddress(inetAddress,service);
         System.out.println(socketAddress);
         Socket socket=new Socket();
@@ -131,24 +87,90 @@ public class Home {
         }
         return null;
     }
-    public static void main(String[] arguments) throws IOException,InterruptedException {
+    class Connect implements Runnable {
+        Connect(int timeout) {
+            this.timeout=timeout;
+        }
+        @Override public void run() {
+            socket=connect(timeout);
+        }
+        final int timeout;
+        Socket socket;
+    }
+    public Socket connectUsingThread(int timeout) {
+        System.out.println("connect using thread");
+        System.out.flush();
+        Connect connect=new Connect(timeout);
+        Thread thread=new Thread(connect,"connect");
+        thread.start();
+        while(thread.isAlive())
+            ;
+        System.out.println("returning: "+connect.socket);
+        return connect.socket;
+    }
+    static boolean loadPropertiesFile(Properties properties,String filename) {
+        URL url=Home.class.getResource(filename);
+        if(url!=null) try {
+            InputStream inputStream=url.openStream();
+            if(inputStream!=null) {
+                properties.load(inputStream);
+                inputStream.close();
+                return true;
+            }
+        } catch(IOException e) {
+            System.out.println("caught: "+e);
+        }
+        return false;
+    }
+    static boolean storeProperties(Properties properties,String filename) {
+        File dir=new File("./src/main/resources/");
+        File dir2=new File(dir,"com/tayek/tablet/");
+        File file=new File(dir2,filename);
+        Writer writer=null;
+        try {
+            writer=new FileWriter(file);
+            properties.store(writer,null);
+            writer.close();
+            return true;
+        } catch(IOException e) {
+            System.out.println("caught: "+e);
+        }
+        return false;
+    }
+    static Properties defaultProperties() {
+        Properties properties;
+        properties=new SortedProperties();
+        properties.put("host","192.168.1.104");
+        properties.put("service","20000");
+        Group group=Group.create(1,1);
+        Model model=group.newModel();
+        properties.put("group",group.groupId.toString());
+        for(Integer i:group.info.keySet()) // will be home's info now!
+            properties.put("tablet"+i,group.info.get(i).toString());
+        properties.put("buttons",group.newModel().buttons.toString());
+        for(int i=1;i<=model.buttons;i++)
+            properties.put("button"+i,model.state(i).toString());
+        return properties;
+    }
+    static Properties loadProperties(Properties properties,String filename) {
+        System.out.println("enter load properties.");
+        if(!loadPropertiesFile(properties,filename)) {
+            System.out.println("no properties file, using default properties.");
+            properties=defaultProperties();
+            if(false) { // we can not normally do this as we may be in a jar.
+                if(!storeProperties(properties,filename)) System.out.println("failed to store properties!");
+            }
+        } else System.out.println("loaded properties.");
+        return properties;
+    }
+    public static void main(String[] arguments) throws IOException {
         God.log.init();
         LoggingHandler.setLevel(Level.ALL);
-        Home home=new Home();
-        ServerSocket serverSocket=new ServerSocket(home.port(0));
-        Group group=home.group();
-        // belongs in some config or properties file.
-        Properties properties=home.properties();
-        Writer writer=new FileWriter(new File("home.properties"));
-        properties.store(writer,null);
-        writer.close();
-        Server server=new Server(group,serverSocket);
-        server.start();
+        Server.run(new Home());
     }
+    private String host;
     private InetAddress inetAddress;
+    private Integer service;
     private final Group group;
-    private static String host;
-    private static Integer service=30_000;
-    private static InetAddress staticInetAddress;
     public static final Logger logger=Logger.getLogger(Home.class.getName());
 }

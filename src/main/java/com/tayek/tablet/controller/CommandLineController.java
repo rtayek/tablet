@@ -2,22 +2,14 @@ package com.tayek.tablet.controller;
 import java.io.*;
 import java.util.logging.Level;
 import com.tayek.tablet.*;
+import com.tayek.tablet.Group.Tablet;
 import com.tayek.tablet.model.*;
 import com.tayek.tablet.view.CommandLineView;
 import com.tayek.utilities.LoggingHandler;
 public class CommandLineController {
-    CommandLineController(Home home,int tabletId) {
-        final Group group=home.group().newGroup();
-        model=group.newModel();
-        client=new TcpClient(group,tabletId,new Message.Receiver<Message>() {
-            @Override public void receive(Message message) /*throws IOException*/ {
-                model.receive(message);
-                if(!message.type.equals(Message.Type.normal)){
-                    System.out.print("in command line controller: ");
-                    group.print();
-                }
-            }
-        });
+    CommandLineController(Home home,final int tabletId) {
+        this.tabletId=tabletId;
+        tablet=home.group().newGroup().new Tablet(home,tabletId);
     }
     private static void usage() {
         System.out.println("usage:");
@@ -51,7 +43,7 @@ public class CommandLineController {
                     if(tokens.length==2) try {
                         int buttonId=Integer.valueOf(tokens[0]);
                         boolean state=Boolean.valueOf(tokens[1]);
-                        model.setState(buttonId,state);
+                        tablet.model().setState(buttonId,state);
                     } catch(Exception e) {
                         System.out.println("caught: "+e);
                         System.out.println("syntax error: "+command);
@@ -60,51 +52,41 @@ public class CommandLineController {
                 } else System.out.println("syntax error: "+command);
                 break;
             case 'o': // send start form foreign group
-                if(client!=null||client.socket()!=null) {
-                    Message message=new Message(99,client.tabletId,Message.Type.start,(Integer)0);
-                    client.send(message);
-                } else System.out.println("client or socket is null!");
+                    Message message=new Message(99,tabletId,Message.Type.startup,0);
+                    tablet.client().send(message);
                 break;
             case 'c':
-                model.addObserver(new CommandLineView(model));
+                tablet.model().addObserver(new CommandLineView(tablet.model()));
                 break;
             case 'g':
                 // gui.Main.observe(null,model,null);
                 break;
             case 'r':
-                model.reset();
+                tablet.model().reset();
                 break;
             case 's':
-                client.start();
+                tablet.client().start();
                 break;
             case '1':
-                if(client!=null||client.socket()!=null) {
-                    Message message=new Message(client.group().groupId,client.tabletId,Message.Type.start,0);
-                    client.send(message);
-                    model.setChangedAndNotify(client.group());
-                } else System.out.println("client or socket is null!");
+                    message=new Message(tablet.group().groupId,tabletId,Message.Type.startup,0);
+                    tablet.client().send(message);
+                    //tablet.model().setChangedAndNotify(tablet.client().group());
                 break;
             case '2':
-                if(client!=null||client.socket()!=null) {
-                    Message message=new Message(client.group().groupId,client.tabletId,Message.Type.hello,0);
-                    client.send(message);
-                    model.setChangedAndNotify(client.group());
-                } else System.out.println("client or socket is null!");
+                message=new Message(tablet.group().groupId,tabletId,Message.Type.hello,0);
+                tablet.client().send(message);
+                //tablet.model().setChangedAndNotify(tablet.client().group());
                 break;
             case '3':
-                if(client!=null||client.socket()!=null) {
-                    Message message=new Message(client.group().groupId,client.tabletId,Message.Type.normal,1,true);
-                    client.send(message);
-                } else System.out.println("client or socket is null!");
+                    message=new Message(tablet.group().groupId,tabletId,Message.Type.normal,1,true);
+                    tablet.client().send(message);
                 break;
             case '4':
-                if(client!=null||client.socket()!=null) {
-                    Message message=new Message(client.group().groupId,client.tabletId,Message.Type.normal,1,false);
-                    client.send(message);
-                } else System.out.println("client or socket is null!");
+                    message=new Message(tablet.group().groupId,tabletId,Message.Type.normal,1,false);
+                    tablet.client().send(message);
                 break;
             case 't':
-                client.stop();
+                tablet.client().stop();
                 break;
             case 'q':
                 return false;
@@ -139,20 +121,20 @@ public class CommandLineController {
         System.out.print(lineSeparator+">");
         System.out.flush();
     }
-    public static void main(String[] argumentss) {
+    public static void main(String[] argu1entss) {
         God.log.init();
         LoggingHandler.setLevel(Level.ALL);
         Home home=new Home();
         Integer tabletId=0;
-        if(argumentss.length==0) tabletId=1;
-        else tabletId=Integer.valueOf(argumentss[0]);
+        if(argu1entss.length==0) tabletId=1;
+        else tabletId=Integer.valueOf(argu1entss[0]);
         if(home.getInetAddress()==null) System.out.println("can not get ip address for host!");
         else {
             CommandLineController commandLineController=new CommandLineController(home,tabletId);
             commandLineController.run();
         }
     }
-    final Model model;
-    TcpClient client;
+    final Integer tabletId;
+    final Tablet tablet;
     public static final String lineSeparator=System.getProperty("line.separator");
 }

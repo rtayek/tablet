@@ -8,7 +8,7 @@ import com.tayek.tablet.model.Message;
 import com.tayek.tablet.model.Message.*;
 import com.tayek.utilities.*;
 // tcp on laptop works fine
-// and can discover all of the tablets if the phone home on startup once.
+// and can discover all of the tablets if the phone home on starting up once.
 // 10/26/15
 // no central server, peer to peer
 // we can assign ip addresses of 192.168.1.11-11+n-1 (for n tablets)
@@ -53,7 +53,7 @@ public class Server implements Runnable {
             return connection;
         }
         @Override public void run() {
-            logger.info("home is listening for connections on: "+serverSocket);
+            logger.info("xxhome is listening for connections on: "+serverSocket);
             while(true) {
                 try {
                     TcpConnection connection=accept(serverSocket.accept());
@@ -79,20 +79,19 @@ public class Server implements Runnable {
         } else acceptor=null;
     }
     void processControlMessage(Message message) {
-        if(message.type.equals(Type.start)) {
+        if(message.type.equals(Type.startup)) {
             System.out.println("start from: "+message.tabletId);
             System.out.println("-----------------------------");
             System.out.print("home knows:");
-            group.print();
+            group.print(0);
             if(group.inetAddress(message.tabletId)!=null) { // unknown?
                 // leave this non static
                 int address=Utility.toInteger(homeInetAddress);
-                Message start=new Message(group.groupId,0,Type.start,address);
+                Message reply=new Message(group.groupId,0,Type.hello,address);
                 if(true) // just to see what happens
-                    messages.addElement(start); // send him a start
+                    messages.addElement(reply); // send him a start
                 // the above does not make sense
                 // he knows me, since he sent me a message.
-       
                 // if i do not know him, maybe i should send
                 // him a start then. or maybe a hello is more appropriate?
                 //
@@ -103,6 +102,12 @@ public class Server implements Runnable {
                 System.out.println(" i don't know: "+message.tabletId);
             }
             System.out.println("-----------------------------");
+            if(!once||group.weHaveThemAll()) {
+                int address=Utility.toInteger(homeInetAddress);
+                Message reply=new Message(group.groupId,0,Type.startup,address);
+                messages.addElement(reply); // send him a start again
+                once=true;
+            }
         }
     }
     void sendMessageToClient(Message message,Iterator<TcpConnection> it,TcpConnection connection) {
@@ -121,7 +126,7 @@ public class Server implements Runnable {
             it.remove();
             System.out.println("lost connection to: "+connection.tabletId);
             if(!connection.tabletId.equals(illegalTabletId)) {
-                Info info=group.info.get(connection.tabletId);
+                Info info=group.info().get(connection.tabletId);
                 System.out.println("we know: "+info);
             }
             // and send a start to that guy
@@ -182,7 +187,7 @@ public class Server implements Runnable {
                                 Message message=Message.from(string);
                                 if(message.groupId.equals(group.groupId)) {
                                     if(connection.tabletId.equals(illegalTabletId)) connection.tabletId=message.tabletId;
-                                    group.captureInetAddress(connection.socket,message);
+                                    group.captureInetAddress(0,connection.socket,message);
                                     logger.fine("added: "+message+" to queue.");
                                     messages.addElement(message);
                                 } else System.out.println("group: "+group.groupId+" received message from foreign group! "+message);
@@ -207,21 +212,30 @@ public class Server implements Runnable {
     @Override public String toString() {
         return "home has: "+acceptor.connections.size()+" connections.";
     }
-    public static void main(String[] args) throws IOException,InterruptedException {
-        God.log.init();
-        LoggingHandler.setLevel(Level.ALL);
-        Home home=new Home();
+    public static void run(Home home) {
+        try {
+            System.out.println("getting server socket on: "+InetAddress.getLocalHost());
+        } catch(UnknownHostException e) {
+            System.out.println("caught: "+e);
+        }
         ServerSocket serverSocket=home.getServerSocket();
-        Group group=home.group();
-        Server server=new Server(group,serverSocket);
+        Server server=new Server(home.group(),serverSocket);
         server.start();
     }
+    public static void main(String[] args) throws IOException,InterruptedException {
+        God.log.init();
+        LoggingHandler.setLevel(Level.OFF);
+        Home home=new Home();
+        System.out.println(home.group());
+        run(home);
+    }
+    private boolean once;
     private final Group group;
     private final InetAddress homeInetAddress;
     final Set<Integer> special=new TreeSet<>();
     { // working android tablets
-        special.add(1);
-        special.add(2);
+      // special.add(1);
+      // special.add(2);
     }
     final Map<Integer,TcpConnection> map=new TreeMap<>();
     final Acceptor acceptor;

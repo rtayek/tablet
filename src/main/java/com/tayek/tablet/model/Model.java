@@ -19,7 +19,6 @@ public class Model extends Observable implements Receiver<Message>,Cloneable {
         reset();
     }
     public void reset() {
-        System.out.println("reset");
         synchronized(states) {
             for(int i=1;i<=buttons;i++)
                 setState(i,false);
@@ -63,13 +62,13 @@ public class Model extends Observable implements Receiver<Message>,Cloneable {
                     }
                     setState(message.button,message.state);
                     break;
-                case start:
+                case startup:
                     InetAddress inetAddress=Utility.inetAddress(message.button);
-                    System.out.println("message had ip address: "+inetAddress+" "+message);
+                    logger.fine("message had ip address: "+inetAddress+" "+message);
                     break;
                 case hello:
                     inetAddress=Utility.inetAddress(message.button);
-                    System.out.println("message had ip address: "+inetAddress+" "+message);
+                    logger.fine("message had ip address: "+inetAddress+" "+message);
                     break;
                 case goodbye:
                     break;

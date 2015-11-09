@@ -287,7 +287,9 @@ public class Factory {
             return stuff!=null?stuff.inetAddress:null;
         }
         public void setInetAddress(int tabletId,InetAddress inetAddress) {
-            info.get(tabletId).inetAddress=inetAddress;
+            if(inetAddress!=null) {
+                info.get(tabletId).inetAddress=inetAddress;
+            }
         }
         public void captureInetAddress(Socket socket,Message message) {
             InetAddress inetAddress=inetAddress(message.tabletId);

@@ -3,6 +3,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.logging.Logger;
+import javax.print.attribute.standard.PrinterInfo;
 import com.tayek.utilities.*;
 import com.tayek.tablet.model.*;
 import com.tayek.tablet.model.Message.*;
@@ -20,20 +21,23 @@ public class Group implements Cloneable {
     // https://guides.codepath.com/android/Sending-and-Receiving-Data-with-Sockets
     public static class Info {
         @Override public String toString() {
-            return inetAddress!=null?inetAddress.toString():"none";
+            return inetAddress!=null?inetAddress.toString():"";
         }
         public TcpClient client;
         public InetAddress inetAddress;
     }
     public class Tablet { // keep this an inner class?
-        public Tablet(int tabletId) {
+        public Tablet(Home home,Integer tabletId) {
             model=newModel();
-            client=new TcpClient(Group.this,tabletId,model);
+            client=new TcpClient(home,Group.this,tabletId,model);
             System.out.println("model id is = "+model.serialNumber);
             this.tabletId=tabletId;
         }
         public Group group() {
             return Group.this;
+        }
+        public Integer tabletId() {
+            return tabletId;
         }
         public Model model() {
             return model;
@@ -49,51 +53,52 @@ public class Group implements Cloneable {
         private final Integer tabletId;
         public final Logger logger=Logger.getLogger(this.getClass().getName());
     }
-    private Group(int id,Set<Integer> ids) {
-        this(id,ids,++serialNumbers);
-        
+    Group(Integer groupId,Set<Integer> tabletIds) {
+        // nobody should call this ctor except for home!
+        this(groupId,tabletIds,++serialNumbers);
     }
-    private Group(int id,Set<Integer> ids,int serialNumber) {
+    private Group(Integer groupId,Set<Integer> tabletIds,Integer serialNumber) {
         // group now always has home in it with a tablet id of zero!
         this.serialNumber=serialNumber;
-        this.groupId=id;
+        this.groupId=groupId;
         info.put(0,new Info());
-        if(ids!=null) for(int tabletId:ids)
+        if(tabletIds!=null) for(int tabletId:tabletIds)
             if(info.size()<maxTablets+1) info.put(tabletId,new Info());
             else System.out.println("tablet: "+tabletId+" too many tablets!");
     }
-    public Tablet createTablet(int tabletId) throws IOException {
-        return new Tablet(tabletId);
+    public static Group create(Integer groupId,Integer start) {
+        return create(groupId,start,defaultTablets);
     }
-    public static Group create(int id,int start) {
-        return create(id,start,defaultTablets);
+    public static Group create(Integer groupId,Integer start,Integer n) {
+        Group group=new Group(groupId,null);
+        Set<Integer> tabletIds=new TreeSet<>();
+        for(Integer tabletId=start;tabletId<start+n;tabletId++)
+            tabletIds.add(tabletId);
+        return new Group(groupId,tabletIds);
     }
-    public static Group create(int id,int start,int n) {
-        Group group=new Group(id,null);
-        Set<Integer> ids=new TreeSet<>();
-        for(int tabletId=start;tabletId<start+n;tabletId++)
-            ids.add(tabletId);
-        return new Group(id,ids);
+    public void setInetAddress(Integer tabletId,InetAddress inetAddress) {
+        info().get(tabletId).inetAddress=inetAddress;
     }
-    public void setInetAddress(int tabletId,InetAddress inetAddress) {
-        info.get(tabletId).inetAddress=inetAddress;
-    }
-    public InetAddress inetAddress(int tabletId) {
-        Info stuff=info.get(tabletId);
+    // move this stuff to info class!
+    public InetAddress inetAddress(Integer tabletId) {
+        Info stuff=info().get(tabletId);
         Object object=stuff!=null?stuff.inetAddress:null;
         return stuff!=null?stuff.inetAddress:null;
     }
-    public void addAddressToMessage(int tabletId,Message message) {
+    public void addAddressToMessage(Integer tabletId,Message message) {
         InetAddress inetAddress=inetAddress(tabletId);
         int address=Utility.toInteger(inetAddress);
         // check for zero?
         if(message.button==0) {
             if(message.tabletId.equals(tabletId)) {
                 message.button=address;
-            } else System.out.println("different tablet id's!");
+            } else {
+                System.out.println("different tablet id's!");
+                throw new RuntimeException();
+            }
         } else System.out.println("already has an addresss.");
     }
-    public InetAddress inetAddress(int tabletId,Socket socket) {
+    public InetAddress inetAddress(Integer tabletId,Socket socket) {
         // maybe belongs in group or tablet?
         InetAddress inetAddress=null;
         if(socket!=null) {
@@ -106,11 +111,11 @@ public class Group implements Cloneable {
         }
         return inetAddress;
     }
-    public InetAddress checkForInetAddress(int tabletId,Socket socket) {
+    public InetAddress checkForInetAddress(Integer tabletId,Socket socket) {
         InetAddress inetAddress=inetAddress(tabletId); // throws
         if(inetAddress==null) inetAddress=inetAddress(tabletId,socket);
         if(inetAddress!=null) { // looks like we discovered a new one!
-            if(info.containsKey(tabletId)) {
+            if(info().containsKey(tabletId)) {
                 this.setInetAddress(tabletId,inetAddress); // here
             } else System.out.println("found a new tablet: "+tabletId);
         }
@@ -122,15 +127,23 @@ public class Group implements Cloneable {
     public Model newModel() {
         return (Model)model.clone();
     }
-    public void print() {
-        System.out.println(this);
-        for(int i:info.keySet())
-            System.out.println("\t"+i+": "+info.get(i));
+    public void print(Integer tabletId) {
+        System.out.println("group: "+groupId+"("+serialNumber+"):"+tabletId);
+        Map<Integer,Info> copy=info();
+        for(int i:copy.keySet())
+            System.out.println("\t"+i+": "+copy.get(i));
+    }
+    public Map<Integer,Info> info() {
+        Map<Integer,Info> copy=new TreeMap<>();
+        synchronized(info) {
+            copy.putAll(info);
+        }
+        return Collections.unmodifiableMap(copy);
     }
     @Override public String toString() {
-        return "group: "+groupId+"("+serialNumber+"): "+info.keySet();
+        return "group: "+groupId+"("+serialNumber+"): "+info().keySet();
     }
-    public void captureInetAddress(Socket socket,Message message) {
+    public void captureInetAddress(Integer tabletId,Socket socket,Message message) {
         if(message!=null) {
             if(message.groupId.equals(groupId)) {
                 InetAddress inetAddress=inetAddress(message.tabletId);
@@ -138,14 +151,21 @@ public class Group implements Cloneable {
                     SocketAddress socketAddress=socket.getRemoteSocketAddress();
                     if(socketAddress instanceof InetSocketAddress) {
                         InetSocketAddress inetSocketAddress=(InetSocketAddress)socketAddress;
-                        setInetAddress(message.tabletId,inetSocketAddress.getAddress());
-                        logger.info("group: "+this+" tablet: "+message.tabletId+" is on: "+inetSocketAddress.getAddress());
-                        logger.info("group: "+this+" info now is: "+info.get(message.tabletId));
-                        
+                        if(inetSocketAddress!=null) {
+                            setInetAddress(message.tabletId,inetSocketAddress.getAddress());
+                            logger.info("group: "+this+" tablet: "+message.tabletId+" is on: "+inetSocketAddress.getAddress());
+                            logger.info("group: "+this+" info now is: "+info().get(message.tabletId));
+                            print(tabletId);
+                        }
                     } else System.out.println("not an inet socket address!");
                 }
             } else System.out.println("group: "+this+" received message from foreign group! "+message);
         } else System.out.println("message is null!");
+    }
+    public boolean weHaveThemAll() {
+        for(Info info:info().values())
+            if(info.inetAddress==null) return false;
+        return true;
     }
     public static void test() {
         System.out.println(create(0,1));
@@ -158,7 +178,7 @@ public class Group implements Cloneable {
         Group clone=new Group(groupId,info.keySet());
         return clone;
     }
-    public final int serialNumber;
+    public final Integer serialNumber;
     public final Model model=new Model(defaultButtons); // default for now
     public final Integer groupId;
     public final Map<Integer,Info> info=new TreeMap<>(); // usually 1-n

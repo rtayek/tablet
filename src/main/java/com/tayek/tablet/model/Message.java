@@ -7,7 +7,7 @@ import com.tayek.tablet.*;
 import com.tayek.utilities.*;
 public class Message implements java.io.Serializable {
     public enum Type {
-        normal,start,hello,goodbye;
+        normal,startup,hello,goodbye;
         public boolean isNormal() {
             return this.equals(normal);
         }
