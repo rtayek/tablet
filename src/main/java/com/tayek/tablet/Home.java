@@ -45,8 +45,27 @@ public class Home {
     // maybe a tablet will be able to be a home.
     // so the groups need to be the same, but separate instances.
     // so we have clone.
-    // write a command line ui for this!
+    // write a command line ui for this! (working on it)
+    //
+    // looks like we can assign a static ip to the fire's.
+    // so we will "know" each tablet's inet address when starting.
+    // so we can go back to the old way
+    // where each tablet listens and had n connections?
+    // or:
+    // always listen, but hang up after each message;
+    // and do a connect, send, close for each outgoing message.
+    // investigate the idea of a new device joining the group (someone's phone or tablet)
+    //
+    // async - lots of requirements for stuff to be run on threads
+    // so roll my own, use handler, use async or use futures?
     // http://stackoverflow.com/questions/18153644/android-asynctask-and-threading
+    // https://medium.com/android-news/8-ways-to-do-asynchronous-processing-in-android-and-counting-f634dc6fae4e
+    // http://stackoverflow.com/questions/6964011/handler-vs-asynctask-vs-thread/9800870#9800870
+    // http://stackoverflow.com/questions/11485482/how-come-androids-asynctask-doesnt-implement-future
+    // http://stackoverflow.com/questions/536327/is-it-a-good-way-to-use-java-util-concurrent-futuretask/1780411#1780411
+    //
+    // ask conrad about little tokyo thing.
+    
     public ServerSocket getServerSocket() {
         try {
             return new ServerSocket(port(0));

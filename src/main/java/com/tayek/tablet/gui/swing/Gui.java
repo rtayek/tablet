@@ -13,6 +13,7 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BoxLayout;
@@ -338,7 +339,7 @@ public class Gui implements Observer,ActionListener {
         // set ip here
         Home home=new Home();
         // 1android tablets are 1 and 2 for now, so start uo a few other ones.
-        if(arguments.length==0) if(false) arguments=new String[] {"1","2"};
+        if(arguments.length==0) if(true) arguments=new String[] {"6","7"};
         else {
             Set<String> set=new TreeSet<>();
             for(Integer tabletId:home.group().info().keySet())
